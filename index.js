@@ -1,6 +1,15 @@
 const csv = require ('csv-parser');
 const fs = require ('fs');
 const axios = require ('axios');
+const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+
+const csvWriter = createCsvWriter({
+    path: 'translated.csv',
+    header: [
+        {id: 'original', title: 'original'},
+        {id: 'translated', title: 'translated'}
+    ]
+});
 
 const readAddressFile = () => {
     const addresses = [];
@@ -25,9 +34,17 @@ const buildTranslationURL = (sourceText) => {
 
 async function translateAddresses (addresses) {
     try {
-        const url = buildTranslationURL (addresses [0].meta_value)
+        const sourceText = addresses [0].meta_value;
+        const url = buildTranslationURL (sourceText)
         const response = await axios.get(url);
-        console.log(response.data);
+        const translatedText = response.data [0][0][0];
+        const records = [
+            { original: sourceText, translated: translatedText },
+        ];
+        await csvWriter.writeRecords(records)
+            .then(() => {
+                console.log('Done');
+            });
     } catch (error) {
         console.error(error);
     }
